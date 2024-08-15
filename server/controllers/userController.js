@@ -1,6 +1,33 @@
 import { verifyDocument } from '../services/cashfreeService.js';
 import User from '../models/User.js';
 
+// Function to handle user login
+export async function loginUser(req, res) {
+  const { email, password } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).send({ message: 'Invalid email or password' });
+    }
+
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      return res.status(400).send({ message: 'Invalid email or password' });
+    }
+
+    // Update last login time
+    user.lastLogin = new Date();
+    await user.save();
+
+    // Return user information (excluding password)
+    const { password: _, ...userInfo } = user.toObject(); 
+    res.send({ message: 'Login successful', user: userInfo });
+  } catch (error) {
+    res.status(500).send({ message: 'Failed to login', error: error.message });
+  }
+}
+
 // Function to get all users
 export async function getAllUsers(req, res) {
   try {
